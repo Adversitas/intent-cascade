@@ -1,0 +1,40 @@
+# API + PostgreSQL (prediction log and pgvector example store) + Prometheus.
+#   docker compose up --build
+#   API:        http://localhost:8000/docs
+#   Prometheus: http://localhost:9090
+services:
+  api:
+    build: .
+    ports: ["8000:8000"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://intent:intent@db:5432/intent
+      VECTOR_DB_URL: postgresql://intent:intent@db:5432/intent
+      INTENT_CASCADE_THRESHOLD: "0.6"
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: intent
+      POSTGRES_PASSWORD: intent
+      POSTGRES_DB: intent
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U intent"]
+      interval: 2s
+      retries: 20
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    volumes:
+      - ./deploy/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/alerts.yml:/etc/prometheus/alerts.yml:ro
+    ports: ["9090:9090"]
+    depends_on: [api]
+
+volumes:
+  pgdata:

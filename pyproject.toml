@@ -1,0 +1,42 @@
+[build-system]
+requires = ["hatchling>=1.24"]
+build-backend = "hatchling.build"
+
+[project]
+name = "intent-cascade"
+version = "0.1.0"
+description = "Customer-support intent classification: a PyTorch model that defers to an LLM when it isn't confident, served with FastAPI, logged to SQL and monitored for drift."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "numpy>=1.26",
+    "torch>=2.2",
+    "scikit-learn>=1.4",
+    "pydantic>=2.6",
+    "sqlalchemy>=2.0",
+    "anthropic>=0.70",
+]
+
+[project.optional-dependencies]
+api = ["fastapi>=0.110", "uvicorn>=0.29", "prometheus-client>=0.20"]
+embeddings = ["sentence-transformers>=3.0"]
+postgres = ["psycopg[binary]>=3.1", "pgvector>=0.2"]
+dev = ["pytest>=8.0", "ruff>=0.5", "httpx>=0.27", "fastapi>=0.110", "prometheus-client>=0.20"]
+
+[project.scripts]
+intent-cascade = "intentcascade.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/intentcascade"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+ignore = ["B905"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

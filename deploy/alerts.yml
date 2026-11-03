@@ -1,0 +1,29 @@
+groups:
+  - name: intent-cascade
+    rules:
+      - alert: ConfidenceDrift
+        # Set by GET /drift; poll it from a cron job or the platform's scheduler.
+        expr: intent_confidence_psi > 0.25
+        for: 30m
+        labels: {severity: warning}
+        annotations:
+          summary: "Model confidence has drifted from its training reference (PSI {{ $value }})"
+          description: "Customers may be asking about something new. Review /stats, sample deferred messages, consider retraining."
+
+      - alert: HighDeferralRate
+        expr: |
+          sum(rate(intent_requests_total{route!="model"}[30m]))
+            / sum(rate(intent_requests_total[30m])) > 0.4
+        for: 30m
+        labels: {severity: warning}
+        annotations:
+          summary: "More than 40% of messages are deferred to the LLM or humans"
+
+      - alert: HumanHandoffSpike
+        expr: |
+          sum(rate(intent_requests_total{route="human"}[15m]))
+            / sum(rate(intent_requests_total[15m])) > 0.15
+        for: 15m
+        labels: {severity: critical}
+        annotations:
+          summary: "Over 15% of messages are going to humans: check LLM availability"
